@@ -31,7 +31,8 @@ class ExporterObject(object):
                               limit_string_length_columns,
                               force_string_columns,
                               force_int_columns,
-                              force_float_columns):
+                              force_float_columns,
+                              include_empty_values):
         """Private function: __process_tags_fields"""
 
         results = dict()
@@ -56,21 +57,24 @@ class ExporterObject(object):
 
                 # If field is empty
                 if len(str(v)) == 0:
-                    # Process the empty
-                    if int_type[column] is True:
-                        v = -999
-                    elif float_type[column] is True:
-                        v = -999.0
-                    else:
-                        v = '-'
+                    if include_empty_values is True:
+                        # Process the empty
+                        if int_type[column] is True:
+                            v = -999
+                        elif float_type[column] is True:
+                            v = -999.0
+                        else:
+                            v = '-'
 
-                    # Process the force
-                    if force_string_columns and column in force_string_columns:
-                        v = '-'
-                    if force_int_columns and column in force_int_columns:
-                        v = -999
-                    if force_float_columns and column in force_float_columns:
-                        v = -999.0
+                        # Process the force
+                        if force_string_columns and column in force_string_columns:
+                            v = '-'
+                        if force_int_columns and column in force_int_columns:
+                            v = -999
+                        if force_float_columns and column in force_float_columns:
+                            v = -999.0
+                else:
+                    v = None
 
             results[column] = v
         return results
@@ -198,7 +202,8 @@ class ExporterObject(object):
                              force_insert_even_csv_no_update=False,
                              force_string_columns=None,
                              force_int_columns=None,
-                             force_float_columns=None):
+                             force_float_columns=None,
+                             include_empty_values=True):
         """Function: export_csv_to_influx
 
         :param csv_file: the csv file path/folder
@@ -230,6 +235,7 @@ class ExporterObject(object):
         :param force_string_columns: force the columns as string (default None)
         :param force_int_columns: force the columns as int (default None)
         :param force_float_columns: force the columns as float (default None)
+        :param include_empty_values: include data columns with no value (default True)
         """
 
         # Init: object
@@ -275,6 +281,7 @@ class ExporterObject(object):
         force_int_columns = base_object.str_to_list(force_int_columns)
         force_float_columns = [] if str(force_float_columns).lower() == 'none' else force_float_columns
         force_float_columns = base_object.str_to_list(force_float_columns)
+        include_empty_values = self.__validate_bool_string(include_empty_values)
 
         # Fields should not duplicate in force_string_columns, force_int_columns, force_float_columns
         all_force_columns = force_string_columns + force_int_columns + force_float_columns
@@ -451,7 +458,8 @@ class ExporterObject(object):
                                                   limit_string_length_columns=limit_string_length_columns,
                                                   force_string_columns=force_string_columns,
                                                   force_int_columns=force_int_columns,
-                                                  force_float_columns=force_float_columns)
+                                                  force_float_columns=force_float_columns,
+                                                  include_empty_values=include_empty_values)
 
                 # Process fields
                 fields = self.__process_tags_fields(columns=field_columns,
@@ -462,7 +470,8 @@ class ExporterObject(object):
                                                     limit_string_length_columns=limit_string_length_columns,
                                                     force_string_columns=force_string_columns,
                                                     force_int_columns=force_int_columns,
-                                                    force_float_columns=force_float_columns)
+                                                    force_float_columns=force_float_columns,
+                                                    include_empty_values=include_empty_values)
 
                 point = {'measurement': db_measurement, 'time': timestamp, 'fields': fields, 'tags': tags}
                 data_points.append(point)
@@ -601,6 +610,8 @@ def export_csv_to_influx():
                         help='Force columns as int type, separated by comma. Default: None.')
     parser.add_argument('-ffc', '--force_float_columns', nargs='?', default=None, const=None,
                         help='Force columns as float type, separated by comma. Default: None.')
+    parser.add_argument('-iev', '--include_empty_values', nargs='?', default=True, const=True,
+                        help='Include data columns with no value as -999, -999.0, or -. Default: True.')
     parser.add_argument('-v', '--version', action="version", version=__version__)
 
     args = parser.parse_args()
@@ -633,4 +644,5 @@ def export_csv_to_influx():
                                   force_insert_even_csv_no_update=args.force_insert_even_csv_no_update,
                                   force_string_columns=args.force_string_columns,
                                   force_int_columns=args.force_int_columns,
-                                  force_float_columns=args.force_float_columns)
+                                  force_float_columns=args.force_float_columns,
+                                  include_empty_values=args.include_empty_values)
