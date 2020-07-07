@@ -31,7 +31,8 @@ class ExporterObject(object):
                               limit_string_length_columns,
                               force_string_columns,
                               force_int_columns,
-                              force_float_columns):
+                              force_float_columns,
+                              na_value):
         """Private function: __process_tags_fields"""
 
         results = dict()
@@ -58,19 +59,25 @@ class ExporterObject(object):
                 if len(str(v)) == 0:
                     # Process the empty
                     if int_type[column] is True:
-                        v = -999
+                        v = int(na_value)
                     elif float_type[column] is True:
-                        v = -999.0
+                        v = float(na_value)
                     else:
-                        v = '-'
+                        if na_value == "-999":  # support legacy behavior
+                            v = '-'
+                        else:
+                            v = str(na_value)
 
                     # Process the force
                     if force_string_columns and column in force_string_columns:
-                        v = '-'
+                        if na_value == "-999":  # support legacy behavior
+                            v = '-'
+                        else:
+                            v = str(na_value)
                     if force_int_columns and column in force_int_columns:
-                        v = -999
+                        v = int(na_value)
                     if force_float_columns and column in force_float_columns:
-                        v = -999.0
+                        v = float(na_value)
 
             results[column] = v
         return results
@@ -198,7 +205,8 @@ class ExporterObject(object):
                              force_insert_even_csv_no_update=False,
                              force_string_columns=None,
                              force_int_columns=None,
-                             force_float_columns=None):
+                             force_float_columns=None,
+                             na_value='-999'):
         """Function: export_csv_to_influx
 
         :param csv_file: the csv file path/folder
@@ -230,6 +238,7 @@ class ExporterObject(object):
         :param force_string_columns: force the columns as string (default None)
         :param force_int_columns: force the columns as int (default None)
         :param force_float_columns: force the columns as float (default None)
+        :param na_value: value submitted to db for missing data (default "-999")
         """
 
         # Init: object
@@ -275,6 +284,7 @@ class ExporterObject(object):
         force_int_columns = base_object.str_to_list(force_int_columns)
         force_float_columns = [] if str(force_float_columns).lower() == 'none' else force_float_columns
         force_float_columns = base_object.str_to_list(force_float_columns)
+        base_object.validate_str(na_value)
 
         # Fields should not duplicate in force_string_columns, force_int_columns, force_float_columns
         all_force_columns = force_string_columns + force_int_columns + force_float_columns
@@ -451,7 +461,8 @@ class ExporterObject(object):
                                                   limit_string_length_columns=limit_string_length_columns,
                                                   force_string_columns=force_string_columns,
                                                   force_int_columns=force_int_columns,
-                                                  force_float_columns=force_float_columns)
+                                                  force_float_columns=force_float_columns,
+                                                  na_value=na_value)
 
                 # Process fields
                 fields = self.__process_tags_fields(columns=field_columns,
@@ -462,7 +473,8 @@ class ExporterObject(object):
                                                     limit_string_length_columns=limit_string_length_columns,
                                                     force_string_columns=force_string_columns,
                                                     force_int_columns=force_int_columns,
-                                                    force_float_columns=force_float_columns)
+                                                    force_float_columns=force_float_columns,
+                                                    na_value=na_value)
 
                 point = {'measurement': db_measurement, 'time': timestamp, 'fields': fields, 'tags': tags}
                 data_points.append(point)
@@ -601,8 +613,9 @@ def export_csv_to_influx():
                         help='Force columns as int type, separated by comma. Default: None.')
     parser.add_argument('-ffc', '--force_float_columns', nargs='?', default=None, const=None,
                         help='Force columns as float type, separated by comma. Default: None.')
+    parser.add_argument('-nv', '--na_value', nargs='?', default="-999", const='-999',
+                        help='Value submitted to db if column is empty. Default: -999.')
     parser.add_argument('-v', '--version', action="version", version=__version__)
-
     args = parser.parse_args()
     exporter = ExporterObject()
     exporter.export_csv_to_influx(csv_file=args.csv,
@@ -633,4 +646,5 @@ def export_csv_to_influx():
                                   force_insert_even_csv_no_update=args.force_insert_even_csv_no_update,
                                   force_string_columns=args.force_string_columns,
                                   force_int_columns=args.force_int_columns,
-                                  force_float_columns=args.force_float_columns)
+                                  force_float_columns=args.force_float_columns,
+                                  na_value=args.na_value)
