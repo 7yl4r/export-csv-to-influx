@@ -209,6 +209,14 @@ class CSVObject(object):
                 except ValueError:
                     float_type[key].append(False)
 
+        # check for empty columns
+        for key in keys:
+            if len(int_type[key]) == 0 or len(float_type[key]) == 0:
+                raise ValueError(
+                    "Column has no valid int or float rows; "
+                    "check your csv file."
+                )
+
         # Valid the key if no header
         if keys and not has_header:
             for key in keys:
