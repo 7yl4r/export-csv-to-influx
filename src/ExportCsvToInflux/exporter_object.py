@@ -1,4 +1,3 @@
-from pytz.exceptions import UnknownTimeZoneError
 from influxdb.exceptions import InfluxDBClientError
 from .influx_object import InfluxObject
 from collections import defaultdict
