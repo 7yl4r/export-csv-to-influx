@@ -213,7 +213,7 @@ class CSVObject(object):
         for key in keys:
             if len(int_type[key]) == 0 or len(float_type[key]) == 0:
                 raise ValueError(
-                    "Column has no valid int or float rows; "
+                    f"Column '{key}' has no valid int or float rows; "
                     "check your csv file."
                 )
 
