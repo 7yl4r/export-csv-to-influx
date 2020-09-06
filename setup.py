@@ -34,6 +34,9 @@ setup(
         'influxdb>=5.2.2',
         'python-dateutil>=2.8.0'
         ],
+    tests_require=[
+        'pytest>=5.3.5'
+    ],
     download_url=download_url,
     url=url,
     classifiers=(
